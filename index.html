@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    form div { 
+      float:left;
+      margin: 5px 10px;
+      font-size: 9px;
+      text-transform:uppercase;
+    }
+  </style>
+
+  <script>
+
+  yayaHalfDayMembers = 300;
+  yayaHalfDayNonMembers = 325;
+  yayaFullDayMembers = 400;
+  yayaFullDayNonMembers = 425;
+
+  hipMusiciansMembers = 225;
+  hipMusiciansNonMembers = 250;
+
+  broadwayMembers = 750;
+  broadwayNonMembers = 800;
+
+  membership = 75;
+  seconChildDiscount = .1;
+  beforeCareFee = 25;
+  afterCareFee = 50;
+
+  window.onload = function() {
+
+    var total;
+
+
+    function formProcess () {
+      total = 0;
+      var beforeCarePossible = 0;
+      var afterCarePossible = 0;
+      var registered = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+
+      message = "";
+      if (document.getElementById('hasMembership').checked || document.getElementById('buyMembership').checked) {
+        var yayaHalfDay  = yayaHalfDayMembers;
+        var yayaFullDay  = yayaFullDayMembers;
+        var hipMusicians = hipMusiciansMembers;
+        var broadway     = broadwayMembers;
+      } else {
+        var yayaHalfDay  = yayaHalfDayNonMembers;
+        var yayaFullDay  = yayaFullDayNonMembers;
+        var hipMusicians = hipMusiciansNonMembers;
+        var broadway     = broadwayNonMembers;
+      }
+      if (document.getElementById('buyMembership').checked) {
+        total += membership;
+      }
+      var sessions = document.getElementsByTagName('input');
+      for (var i = 0; i < sessions.length; i ++) {
+        if (sessions[i].checked) {
+          camp = sessions[i].id.substring(0,3);       // grab the first three letters of the id, the camp type
+          session = sessions[i].id.substring(3,4);    // grab the 4th character, the session number
+          if (camp == 'art' || camp == 'act') {
+            if (camp == 'act' && document.getElementById('art' + session).checked) {   // if both morning and evening
+              total += yayaFullDay - yayaHalfDay;
+            } else {
+              total += yayaHalfDay;
+              registered[session * 2 - 1] ++;
+              registered[session * 2 - 2] ++;
+            }
+
+          }
+          if (camp == 'arl' || camp == 'acl') {
+            if (camp == 'acl' && document.getElementById('arl' + session).checked) {   // if both morning and evening
+              total += yayaFullDay - yayaHalfDay;
+            } else {
+              total += yayaHalfDay;
+            }
+            registered[session * 2 - 1] ++;
+            registered[session * 2 - 2] ++;
+          }
+          if (camp == 'art' || camp == 'arl') {
+            afterCarePossible += 2;
+          }
+          if (camp == 'act' || camp == 'acl') {
+            beforeCarePossible += 2;
+          }
+
+          if (camp == 'yaa') {
+            total += yayaFullDay;
+            beforeCarePossible += 2;
+            afterCarePossible += 2;
+            registered[4] ++;
+            registered[5] ++;
+          }
+          if (camp == 'hip') {
+            total += hipMusicians;
+            beforeCarePossible ++;
+            afterCarePossible ++;
+            registered[4] ++;
+          }
+          if (camp == 'baa') {
+            total += broadway;
+            beforeCarePossible += 4;
+            afterCarePossible += 4;
+            if (session == 1) {
+              registered[0] ++; registered[1] ++; registered[2] ++; registered[3] ++; 
+            } else if (session == 2) {
+              registered[5] ++; registered[6] ++; registered[7] ++; registered[8] ++; 
+            } else {
+              console.log('error: no session for Broadway actors in code');
+            }
+          }
+        }
+      }
+
+      if (document.getElementById('beforeCare').checked) {
+        var e = document.getElementById('beforeCareWeeks');
+        var beforeCareSelected = e.options[e.selectedIndex].value;
+        if (beforeCareSelected == "all") {
+          beforeCareSelected = beforeCarePossible;
+        }
+        total += beforeCareFee * beforeCareSelected;
+        if (beforeCareSelected > beforeCarePossible) {
+          if (beforeCarePossible != 1) {
+            msgPlural = "weeks";
+          } else {
+            msgPlural = "week";
+          }
+          message = "<b>Error:</b> You have registered for " + beforeCarePossible + " " + msgPlural +
+                    " of camp, but " + beforeCareSelected + " weeks of before-care.";
+        }
+      }
+
+      if (document.getElementById('afterCare').checked) {
+        var e = document.getElementById('afterCareWeeks');
+        var afterCareSelected = e.options[e.selectedIndex].value;
+        if (afterCareSelected == "all") {
+          afterCareSelected = afterCarePossible;
+        }
+        total += afterCareFee * afterCareSelected;
+        if (afterCareSelected > afterCarePossible) {
+          if (afterCarePossible != 1) {
+            msgPlural = "weeks";
+          } else {
+            msgPlural = "week";
+          }
+          message = "<b>Error:</b> You have registered for " + afterCarePossible + " " + msgPlural +
+                    " of camp, but " + afterCareSelected + " weeks of after-care.";
+        }
+      }
+
+      if (document.getElementById('secondChild').checked) {
+        total = total - (total * seconChildDiscount);
+      }
+
+      donation = document.getElementById('donation').value;
+      donation = donation.match(/\d+/);
+      if (donation >= .01) {
+        total += parseInt(donation);
+      }
+
+      if (total % 1 != 0) {          // if total isn't an even number, give it two decimal places
+        total = total.toFixed(2); 
+      }
+
+      for (var i = 0; i < registered.length; i ++) {
+        if (registered[i] > 1) {
+          message = "Error: You are registered for conflicting weeks."
+        }
+      }
+
+      document.getElementById('total').innerHTML = "$" + total;
+      document.getElementById('message').innerHTML = message;
+      console.log('weeks registered: ' + registered + '\n');
+    }
+
+    el = document.getElementById('registration');
+    el.onchange = formProcess;
+
+  }
+  </script>
+</head>
+<body>
+
+<form action="" id="registration">
+  <div><input id="fname"  type="text" size="25" name="fname" ><br />First name</div>
+  <div><input id="lname"  type="text" size="25" name="lname" ><br />Last name</div>
+  
+  <br style="clear:both"/>
+
+  <div><input id="dob"  type="text" size="40" name="fname" ><br />Date of Birth</div>
+  <div><input id="age"  type="text" size="10" name="lname" ><br />Age</div>
+  
+  <br style="clear:both"/> 
+
+  <div><input id="school"  type="text" size="60" name="lname" ><br />School</div>
+  
+  <br style="clear:both"/>   
+  
+  <div><input id="parent"  type="text" size="60" name="lname" ><br />Parent/Guardian</div>
+  
+  <br style="clear:both"/>  
+  
+  <div><input id="school"  type="text" size="60" name="lname" ><br />Address</div>
+  
+  <br style="clear:both"/> 
+  
+  <div><input id="city"  type="text" size="26" name="fname" ><br />City</div>
+  <div><input id="state"  type="text" size="5" name="lname" ><br />State</div>  
+  <div><input id="zip"  type="text" size="10" name="lname" ><br />Zip</div>
+  
+  <br style="clear:both"/>  <br />  
+  <table>
+  <tr><td><strong>Young Actors (morning)</strong></td><td><strong>Young Artists (afternoon)</strong></td></tr>
+    <tr>
+      <td>
+        <input id="act1" type="checkbox" > Session 1: June 9 – June 20<br />
+      </td>
+      <td>
+        <input id="art1" type="checkbox" > Session 1: June 9 – June 20<br />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="act2" type="checkbox" > Session 2: June 23 – July 3*<br />
+      </td>
+      <td>
+        <input id="art2" type="checkbox" > Session 2: June 23 – July 3*<br />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="act3" type="checkbox" > Session 3: July 7 – July 18<br />
+      </td>
+      <td>
+        <input id="art3" type="checkbox" > Session 3: July 7 – July 18<br />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="act4" type="checkbox" > Session 4: July 21 – Aug. 1<br />
+      </td>
+      <td>
+        <input id="art4" type="checkbox" > Session 4: July 21 – Aug. 1<br />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="act5" type="checkbox" > Session 5: Aug. 4 – Aug. 15<br />
+      </td>
+      <td>
+        <input id="art5" type="checkbox" > Session 5: Aug. 4 – Aug. 15<br />
+      </td>
+    </tr>
+    <tr><td>&nbsp;</td></tr>
+    <tr>
+      <td><strong>Littlest Actors (morning)</strong></td>
+      <td><strong>Littlest Artists (afternoon)</strong></td>
+    </tr>
+    <tr>
+      <td>
+        <input id="acl1" type="checkbox" > Session 1: June 9 – June 20<br />
+      </td>
+      <td>
+        <input id="arl1" type="checkbox" > Session 1: June 9 – June 20<br />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="acl2" type="checkbox" > Session 2: June 23 – July 3*<br />
+      </td>
+      <td>
+        <input id="arl2" type="checkbox" > Session 2: June 23 – July 3*<br />
+      </td>
+    </tr>
+    <tr><td>&nbsp;</td></tr>
+    <tr>
+      <td>
+        <strong>Young Artists Advanced</strong>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="yaa1" type="checkbox" > Session 1: July 7 — July 18<br />
+      </td>
+
+    </tr>
+    <tr>
+      <td>
+        <input id="yaa2" type="checkbox" > Session 2: July 21 — Aug. 1<br />
+      </td>
+    </tr>
+    <tr><td>&nbsp;</td></tr>
+    <tr ><td colspan="2">$400 members/$425 non-members per 2-week session, full day <br />$300 members/$325 non-members per 2-week session, half-day</td></tr>
+    <tr><td colspan="2" style="border-bottom: 1px dotted black">&nbsp;</td></tr>
+    <tr><td>&nbsp;</td></tr>
+    <tr>
+      <td>
+        <strong>Hip Musicians' Percussion Groove</strong>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="hip1" type="checkbox" > Session 1: July 7 — July 11<br />
+      </td>
+    </tr>
+    <tr ><td colspan="2">$225 members/$250 non-members per 1-week session, full day</td></tr>
+    <tr><td colspan="2" style="border-bottom: 1px dotted black">&nbsp;</td></tr>
+    <tr><td>&nbsp;</td></tr>
+    <tr>
+      <td>
+        <strong>Broadway Actors</strong>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="baa1" type="checkbox" > Session 1: June 9 — July 3<br />
+      </td>
+
+    </tr>
+    <tr>
+      <td>
+        <input id="baa2" type="checkbox" > Session 2: July 14 — Aug. 8<br />
+      </td>
+    </tr>
+    <tr ><td colspan="2">$750 members/$800 non-members per 4-week session, full day</td></tr>
+    <tr><td colspan="2" style="border-bottom: 1px dotted black">&nbsp;</td></tr>
+    <tr><td>&nbsp;</td></tr>
+    <tr>
+      <td>
+        <strong>Total</strong>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="buyMembership" type="checkbox" > Add a family membership ($75)
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="hasMembership" type="checkbox" > I am already a member
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="secondChild" type="checkbox" > Second Child Discount ( –10%)
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="beforeCare" type="checkbox" > Before Care: 
+        <select id="beforeCareWeeks">
+          <option value="all">All sessions</option>
+          <option value="1">1 week</option>
+          <option value="2">2 weeks</option>
+          <option value="3">3 weeks</option>
+          <option value="4">4 weeks</option>
+          <option value="5">5 weeks</option>
+          <option value="6">6 weeks</option>
+          <option value="7">7 weeks</option>
+          <option value="8">8 weeks</option>
+          <option value="9">9 weeks</option>
+          <option value="10">10 weeks</option>
+        </select> (8 – 9 am, $25 per week)
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="afterCare" type="checkbox" > After Care: 
+        <select id="afterCareWeeks">
+          <option value="all">All sessions</option>
+          <option value="1">1 week</option>
+          <option value="2">2 weeks</option>
+          <option value="3">3 weeks</option>
+          <option value="4">4 weeks</option>
+          <option value="5">5 weeks</option>
+          <option value="6">6 weeks</option>
+          <option value="7">7 weeks</option>
+          <option value="8">8 weeks</option>
+          <option value="9">9 weeks</option>
+          <option value="10">10 weeks</option>
+        </select> (4 – 6 pm, $50 per week)
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <span >I would like to make an contribution to the <br />summer camp scholarship fund of: </span>
+        <input type="text" id="donation">
+      </td>
+    </tr>
+
+    <tr><td colspan="2" style="border-bottom: 1px dotted black">&nbsp;</td></tr>
+    <tr><td>&nbsp;</td></tr>
+    <tr><td><strong>Total: <span id="total"></span></strong></td></tr>
+    <tr><td colspan="2" style="border-bottom: 1px dotted black">&nbsp;</td></tr>
+  </table>
+</form>
+ <p><span id="message"></span>&nbsp;</p> 
+</body>
+</html>
